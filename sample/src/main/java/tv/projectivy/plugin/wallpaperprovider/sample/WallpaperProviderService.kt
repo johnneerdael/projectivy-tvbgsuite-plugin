@@ -2,6 +2,7 @@ package tv.projectivy.plugin.wallpaperprovider.sample
 
 import android.app.Service
 import android.content.Intent
+import android.net.Uri
 import android.os.IBinder
 import android.util.Log
 import kotlinx.coroutines.runBlocking
@@ -60,6 +61,7 @@ class WallpaperProviderService : Service() {
                     if (generated != null) {
                         PreferencesManager.lastWallpaperUri = generated.contentUri
                         PreferencesManager.lastWallpaperAuthor = generated.title
+                        grantWallpaperRead(generated.contentUri)
                         return listOf(
                             Wallpaper(
                                 uri = generated.contentUri,
@@ -90,6 +92,7 @@ class WallpaperProviderService : Service() {
         val lastUri = PreferencesManager.lastWallpaperUri
         val lastAuthor = PreferencesManager.lastWallpaperAuthor
         return if (lastUri.isNotBlank()) {
+            grantWallpaperRead(lastUri)
             listOf(
                 Wallpaper(
                     uri = lastUri,
@@ -102,5 +105,18 @@ class WallpaperProviderService : Service() {
         } else {
             emptyList()
         }
+    }
+
+    private fun grantWallpaperRead(uri: String) {
+        try {
+            grantUriPermission(PROJECTIVY_PACKAGE_ID, Uri.parse(uri), Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            Log.e("WallpaperService", "PROJECTIVY_LOG: Granted Projectivy read permission for $uri")
+        } catch (error: Exception) {
+            Log.e("WallpaperService", "PROJECTIVY_LOG: Failed to grant wallpaper URI permission", error)
+        }
+    }
+
+    companion object {
+        private const val PROJECTIVY_PACKAGE_ID = "com.spocky.projengmenu"
     }
 }
