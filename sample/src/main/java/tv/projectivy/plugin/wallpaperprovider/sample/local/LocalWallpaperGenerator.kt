@@ -9,6 +9,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import kotlin.random.Random
+import tv.projectivy.plugin.wallpaperprovider.sample.PreferencesManager
 
 class LocalWallpaperGenerator(
     private val context: Context,
@@ -36,9 +38,22 @@ class LocalWallpaperGenerator(
         val apiKey = BuildConfig.TRAKT_CLIENT_ID.trim()
         val moviesResponse = traktApi.anticipatedMovies(apiKey = apiKey, authorization = authorization, limit = 20)
         val showsResponse = traktApi.anticipatedShows(apiKey = apiKey, authorization = authorization, limit = 20)
-        val movies = moviesResponse.body().orEmpty().mapNotNull { it.toWallpaperCandidate(CatalogKind.ANTICIPATED_MOVIE) }
-        val shows = showsResponse.body().orEmpty().mapNotNull { it.toWallpaperCandidate(CatalogKind.ANTICIPATED_SHOW) }
-        val candidates = interleave(movies, shows)
+        val selectedCatalogs = PreferencesManager.selectedCatalogs
+            .split(',')
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .toSet()
+        val movies = if ("anticipated_movies" in selectedCatalogs) {
+            moviesResponse.body().orEmpty().mapNotNull { it.toWallpaperCandidate(CatalogKind.ANTICIPATED_MOVIE) }
+        } else {
+            emptyList()
+        }
+        val shows = if ("anticipated_shows" in selectedCatalogs) {
+            showsResponse.body().orEmpty().mapNotNull { it.toWallpaperCandidate(CatalogKind.ANTICIPATED_SHOW) }
+        } else {
+            emptyList()
+        }
+        val candidates = randomizedCandidates(movies, shows)
 
         for (candidate in candidates) {
             val details = tmdb.details(candidate) ?: continue
@@ -73,6 +88,13 @@ class LocalWallpaperGenerator(
             }
             return result
         }
+
+        fun randomizedCandidates(
+            movies: List<WallpaperCandidate>,
+            shows: List<WallpaperCandidate>,
+            random: Random = Random.Default
+        ): List<WallpaperCandidate> =
+            (movies + shows).shuffled(random)
 
         fun isRenderable(details: TmdbDetails, hasBackdrop: Boolean, hasLogo: Boolean): Boolean =
             hasBackdrop && hasLogo && details.backdropUrl.isNotBlank() && !details.logoUrl.isNullOrBlank()
