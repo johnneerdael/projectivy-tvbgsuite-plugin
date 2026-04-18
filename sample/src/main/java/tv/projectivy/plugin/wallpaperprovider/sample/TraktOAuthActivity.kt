@@ -5,8 +5,8 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.FragmentActivity
-import com.butch708.projectivy.tvbgsuite.BuildConfig
-import com.butch708.projectivy.tvbgsuite.R
+import com.traktlistbackdrops.tv.BuildConfig
+import com.traktlistbackdrops.tv.R
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay

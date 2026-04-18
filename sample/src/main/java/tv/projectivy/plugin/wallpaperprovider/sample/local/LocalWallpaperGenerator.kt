@@ -2,7 +2,7 @@ package tv.projectivy.plugin.wallpaperprovider.sample.local
 
 import android.content.Context
 import android.graphics.BitmapFactory
-import com.butch708.projectivy.tvbgsuite.BuildConfig
+import com.traktlistbackdrops.tv.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -36,26 +36,57 @@ class LocalWallpaperGenerator(
     suspend fun generate(): GeneratedWallpaper? = withContext(Dispatchers.IO) {
         val authorization = auth.authorizationHeader() ?: return@withContext null
         val apiKey = BuildConfig.TRAKT_CLIENT_ID.trim()
-        val moviesResponse = traktApi.anticipatedMovies(apiKey = apiKey, authorization = authorization, limit = 20)
-        val showsResponse = traktApi.anticipatedShows(apiKey = apiKey, authorization = authorization, limit = 20)
         val selectedCatalogs = PreferencesManager.selectedCatalogs
             .split(',')
             .map { it.trim() }
             .filter { it.isNotBlank() }
             .toSet()
-        val movies = if ("anticipated_movies" in selectedCatalogs) {
-            moviesResponse.body().orEmpty().mapNotNull { it.toWallpaperCandidate(CatalogKind.ANTICIPATED_MOVIE) }
-        } else {
-            emptyList()
-        }
-        val shows = if ("anticipated_shows" in selectedCatalogs) {
-            showsResponse.body().orEmpty().mapNotNull { it.toWallpaperCandidate(CatalogKind.ANTICIPATED_SHOW) }
-        } else {
-            emptyList()
-        }
-        val candidates = randomizedCandidates(movies, shows)
 
-        for (candidate in candidates) {
+        val candidates = mutableListOf<WallpaperCandidate>()
+
+        if ("anticipated_movies" in selectedCatalogs) {
+            val response = traktApi.anticipatedMovies(apiKey = apiKey, authorization = authorization, limit = 20)
+            candidates += response.body().orEmpty().mapNotNull { it.toWallpaperCandidate(CatalogKind.ANTICIPATED_MOVIE) }
+        }
+        if ("anticipated_shows" in selectedCatalogs) {
+            val response = traktApi.anticipatedShows(apiKey = apiKey, authorization = authorization, limit = 20)
+            candidates += response.body().orEmpty().mapNotNull { it.toWallpaperCandidate(CatalogKind.ANTICIPATED_SHOW) }
+        }
+        if ("trending_movies" in selectedCatalogs) {
+            val response = traktApi.trendingMovies(apiKey = apiKey, authorization = authorization, limit = 20)
+            candidates += response.body().orEmpty().mapNotNull { it.toWallpaperCandidate(CatalogKind.TRENDING_MOVIE) }
+        }
+        if ("trending_shows" in selectedCatalogs) {
+            val response = traktApi.trendingShows(apiKey = apiKey, authorization = authorization, limit = 20)
+            candidates += response.body().orEmpty().mapNotNull { it.toWallpaperCandidate(CatalogKind.TRENDING_SHOW) }
+        }
+
+        selectedCatalogs.filter { it.startsWith("popular_list:") }.forEach { key ->
+            val option = parsePopularListKey(key) ?: return@forEach
+            val movieItems = traktApi.listItems(
+                userId = option.userId,
+                listId = option.listId,
+                type = "movies",
+                apiKey = apiKey,
+                authorization = authorization,
+                limit = 20
+            )
+            candidates += movieItems.body().orEmpty().mapNotNull { it.toWallpaperCandidate(CatalogKind.POPULAR_LIST_MOVIE) }
+
+            val showItems = traktApi.listItems(
+                userId = option.userId,
+                listId = option.listId,
+                type = "shows",
+                apiKey = apiKey,
+                authorization = authorization,
+                limit = 20
+            )
+            candidates += showItems.body().orEmpty().mapNotNull { it.toWallpaperCandidate(CatalogKind.POPULAR_LIST_SHOW) }
+        }
+
+        val randomized = randomizedCandidates(candidates, emptyList())
+
+        for (candidate in randomized) {
             val details = tmdb.details(candidate) ?: continue
             if (details.logoUrl.isNullOrBlank()) continue
             val backdrop = downloadBitmap(details.backdropUrl) ?: continue
@@ -98,5 +129,16 @@ class LocalWallpaperGenerator(
 
         fun isRenderable(details: TmdbDetails, hasBackdrop: Boolean, hasLogo: Boolean): Boolean =
             hasBackdrop && hasLogo && details.backdropUrl.isNotBlank() && !details.logoUrl.isNullOrBlank()
+
+        fun parsePopularListKey(key: String): TraktPopularListOption? {
+            val parts = key.split(':')
+            if (parts.size != 3 || parts[0] != "popular_list") return null
+            return TraktPopularListOption(
+                key = key,
+                title = "${parts[1]}/${parts[2]}",
+                userId = parts[1],
+                listId = parts[2]
+            )
+        }
     }
 }

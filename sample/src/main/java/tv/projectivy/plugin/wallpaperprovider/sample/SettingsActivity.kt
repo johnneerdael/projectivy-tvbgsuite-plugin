@@ -8,7 +8,7 @@ import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
 import androidx.leanback.app.GuidedStepSupportFragment
 import tv.projectivy.plugin.wallpaperprovider.api.WallpaperProviderContract
-import com.butch708.projectivy.tvbgsuite.R
+import com.traktlistbackdrops.tv.R
 
 class SettingsActivity : FragmentActivity() {
 

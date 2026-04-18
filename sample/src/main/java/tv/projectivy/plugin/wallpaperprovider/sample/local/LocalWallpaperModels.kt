@@ -2,9 +2,13 @@ package tv.projectivy.plugin.wallpaperprovider.sample.local
 
 import com.google.gson.annotations.SerializedName
 
-enum class CatalogKind {
-    ANTICIPATED_MOVIE,
-    ANTICIPATED_SHOW
+enum class CatalogKind(val isMovie: Boolean) {
+    ANTICIPATED_MOVIE(true),
+    ANTICIPATED_SHOW(false),
+    TRENDING_MOVIE(true),
+    TRENDING_SHOW(false),
+    POPULAR_LIST_MOVIE(true),
+    POPULAR_LIST_SHOW(false)
 }
 
 data class TraktIds(
@@ -25,6 +29,54 @@ data class TraktAnticipatedItem(
     @SerializedName("list_count") val listCount: Int,
     val movie: TraktMediaSummary? = null,
     val show: TraktMediaSummary? = null
+)
+
+data class TraktTrendingItem(
+    val watchers: Int? = null,
+    val movie: TraktMediaSummary? = null,
+    val show: TraktMediaSummary? = null
+)
+
+data class TraktListItem(
+    val type: String? = null,
+    val movie: TraktMediaSummary? = null,
+    val show: TraktMediaSummary? = null
+)
+
+data class TraktPopularListItem(
+    @SerializedName("like_count") val likeCount: Int? = null,
+    @SerializedName("comment_count") val commentCount: Int? = null,
+    val list: TraktListSummary? = null,
+    val user: TraktUserSummary? = null
+)
+
+data class TraktListSummary(
+    val name: String? = null,
+    @SerializedName("item_count") val itemCount: Int? = null,
+    val ids: TraktListIds? = null,
+    val user: TraktUserSummary? = null
+)
+
+data class TraktListIds(
+    val trakt: Long? = null,
+    val slug: String? = null
+)
+
+data class TraktUserSummary(
+    val username: String? = null,
+    val ids: TraktUserIds? = null
+)
+
+data class TraktUserIds(
+    val slug: String? = null
+)
+
+data class TraktPopularListOption(
+    val key: String,
+    val title: String,
+    val userId: String,
+    val listId: String,
+    val itemCount: Int = 0
 )
 
 data class WallpaperCandidate(

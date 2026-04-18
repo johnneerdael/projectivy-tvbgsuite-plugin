@@ -1,6 +1,6 @@
 package tv.projectivy.plugin.wallpaperprovider.sample.local
 
-import com.butch708.projectivy.tvbgsuite.BuildConfig
+import com.traktlistbackdrops.tv.BuildConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test

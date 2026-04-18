@@ -1,6 +1,6 @@
-# TVBG Suite Local Projectivy Wallpaper Plugin
+# Trakt Wallpapers for Projectivy
 
-This Projectivy wallpaper provider APK generates TV wallpapers directly on Android TV. It authenticates with Trakt using device OAuth, reads Trakt anticipated movies and shows, fetches backdrop and logo artwork from TMDB using built-in developer credentials, renders wallpapers locally, and returns local image URIs to Projectivy.
+This Projectivy wallpaper provider APK generates TV wallpapers directly on Android TV. It authenticates with Trakt using device OAuth, reads selected Trakt catalogs, fetches backdrop and logo artwork from TMDB using built-in developer credentials, renders wallpapers locally, and returns local image URIs to Projectivy.
 
 It no longer requires a TVBG Suite web server for the local generation flow.
 
@@ -8,7 +8,7 @@ It no longer requires a TVBG Suite web server for the local generation flow.
 
 1. Projectivy calls `WallpaperProviderService.getWallpapers`.
 2. The plugin refreshes or reuses Trakt OAuth tokens.
-3. The plugin fetches `/movies/anticipated` and `/shows/anticipated`.
+3. The plugin fetches selected Trakt catalogs such as anticipated, trending, and popular lists.
 4. The plugin resolves TMDB details and logo/backdrop images.
 5. The plugin renders a 3840x2160 JPEG with upper-right artwork placement, left fade, bottom fade, and top-left title logo.
 6. The plugin returns a local FileProvider URI to Projectivy.
@@ -19,7 +19,7 @@ It no longer requires a TVBG Suite web server for the local generation flow.
 - Backdrop: cover-cropped with an upper-right bias.
 - Logo: fit into a top-left logo box.
 - Gradients: left readability fade and bottom dark fade.
-- Catalogs: anticipated movies and anticipated shows.
+- Catalogs: anticipated movies/shows, trending movies/shows, and selected popular Trakt lists.
 
 ## Installation & Setup
 
@@ -33,8 +33,8 @@ It no longer requires a TVBG Suite web server for the local generation flow.
 3. Go to **Appearance** > **Wallpaper**.
 4. Select this plugin as the wallpaper source.
 5. Open plugin settings.
-6. Start Trakt OAuth, approve the device code, then check OAuth.
-7. Keep anticipated movies, anticipated shows, or both enabled.
+6. Start Trakt OAuth and approve the QR/device code.
+7. Fetch popular Trakt lists, then enable the catalogs and lists you want.
 
 ## Local Generator Build Properties
 
@@ -60,7 +60,7 @@ The device-code OAuth flow uses `client_id` to start and `code + client_id + cli
 ## Package
 
 ```text
-com.butch708.projectivy.tvbgsuite
+com.traktlistbackdrops.tv
 ```
 
 ## Architecture

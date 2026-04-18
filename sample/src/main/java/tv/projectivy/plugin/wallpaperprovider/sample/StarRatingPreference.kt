@@ -7,7 +7,7 @@ import android.widget.RatingBar
 import android.widget.TextView
 import androidx.preference.Preference
 import androidx.preference.PreferenceViewHolder
-import com.butch708.projectivy.tvbgsuite.R
+import com.traktlistbackdrops.tv.R
 import kotlin.math.roundToInt
 
 class StarRatingPreference(context: Context, attrs: AttributeSet?) : Preference(context, attrs) {

@@ -21,11 +21,11 @@ plugins {
 }
 
 android {
-    namespace = "com.butch708.projectivy.tvbgsuite"
+    namespace = "com.traktlistbackdrops.tv"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.butch708.projectivy.tvbgsuite"
+        applicationId = "com.traktlistbackdrops.tv"
         minSdk = 23
         targetSdk = 36
         versionCode = 34

@@ -77,4 +77,40 @@ interface TraktLocalApi {
         @Header("Authorization") authorization: String,
         @Query("limit") limit: Int = 20
     ): Response<List<TraktAnticipatedItem>>
+
+    @Headers("trakt-api-version: 2")
+    @GET("movies/trending")
+    suspend fun trendingMovies(
+        @Header("trakt-api-key") apiKey: String,
+        @Header("Authorization") authorization: String,
+        @Query("limit") limit: Int = 20
+    ): Response<List<TraktTrendingItem>>
+
+    @Headers("trakt-api-version: 2")
+    @GET("shows/trending")
+    suspend fun trendingShows(
+        @Header("trakt-api-key") apiKey: String,
+        @Header("Authorization") authorization: String,
+        @Query("limit") limit: Int = 20
+    ): Response<List<TraktTrendingItem>>
+
+    @Headers("trakt-api-version: 2")
+    @GET("lists/popular")
+    suspend fun popularLists(
+        @Header("trakt-api-key") apiKey: String,
+        @Header("Authorization") authorization: String,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 30
+    ): Response<List<TraktPopularListItem>>
+
+    @Headers("trakt-api-version: 2")
+    @GET("users/{id}/lists/{list_id}/items/{type}")
+    suspend fun listItems(
+        @retrofit2.http.Path("id") userId: String,
+        @retrofit2.http.Path("list_id") listId: String,
+        @retrofit2.http.Path("type") type: String,
+        @Header("trakt-api-key") apiKey: String,
+        @Header("Authorization") authorization: String,
+        @Query("limit") limit: Int = 20
+    ): Response<List<TraktListItem>>
 }

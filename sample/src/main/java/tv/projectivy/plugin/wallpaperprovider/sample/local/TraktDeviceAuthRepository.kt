@@ -1,6 +1,6 @@
 package tv.projectivy.plugin.wallpaperprovider.sample.local
 
-import com.butch708.projectivy.tvbgsuite.BuildConfig
+import com.traktlistbackdrops.tv.BuildConfig
 import tv.projectivy.plugin.wallpaperprovider.sample.PreferencesManager
 
 sealed class TraktPollResult {

@@ -43,6 +43,7 @@ object PreferencesManager {
     private const val TRAKT_USER_CODE_KEY = "trakt_user_code"
     private const val TRAKT_VERIFICATION_URL_KEY = "trakt_verification_url"
     private const val SELECTED_CATALOGS_KEY = "selected_catalogs"
+    private const val POPULAR_LIST_OPTIONS_KEY = "popular_list_options"
 
     lateinit var preferences: SharedPreferences
 
@@ -155,8 +156,12 @@ object PreferencesManager {
         set(value) { PreferencesManager[TRAKT_VERIFICATION_URL_KEY] = value }
 
     var selectedCatalogs: String
-        get() = PreferencesManager[SELECTED_CATALOGS_KEY, "anticipated_movies,anticipated_shows"]
+        get() = PreferencesManager[SELECTED_CATALOGS_KEY, "anticipated_movies,anticipated_shows,trending_movies,trending_shows"]
         set(value) { PreferencesManager[SELECTED_CATALOGS_KEY] = value }
+
+    var popularListOptions: String
+        get() = PreferencesManager[POPULAR_LIST_OPTIONS_KEY, ""]
+        set(value) { PreferencesManager[POPULAR_LIST_OPTIONS_KEY] = value }
 
     fun export(): String {
         return convertSharedPreferencesToJson(preferences)

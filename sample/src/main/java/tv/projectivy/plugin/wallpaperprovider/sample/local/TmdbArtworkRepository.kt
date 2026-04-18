@@ -1,6 +1,6 @@
 package tv.projectivy.plugin.wallpaperprovider.sample.local
 
-import com.butch708.projectivy.tvbgsuite.BuildConfig
+import com.traktlistbackdrops.tv.BuildConfig
 
 class TmdbArtworkRepository(private val api: TmdbLocalApi) {
     suspend fun details(candidate: WallpaperCandidate): TmdbDetails? {

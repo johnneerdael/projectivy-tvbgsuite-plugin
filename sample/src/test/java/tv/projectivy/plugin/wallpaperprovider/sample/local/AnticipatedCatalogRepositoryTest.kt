@@ -65,4 +65,65 @@ class AnticipatedCatalogRepositoryTest {
 
         assertEquals(null, show.toWallpaperCandidate(CatalogKind.ANTICIPATED_SHOW))
     }
+
+    @Test
+    fun mapsTrendingAndListItemsToCandidates() {
+        val media = TraktMediaSummary(
+            title = "Project Hail Mary",
+            year = 2026,
+            ids = TraktIds(trakt = 1003596, slug = "project-hail-mary-2026", imdb = "tt12042730", tmdb = 490205)
+        )
+
+        assertEquals(
+            WallpaperCandidate(
+                catalog = CatalogKind.TRENDING_MOVIE,
+                title = "Project Hail Mary",
+                year = 2026,
+                tmdbId = 490205,
+                imdbId = "tt12042730",
+                traktId = 1003596,
+                tvdbId = null
+            ),
+            TraktTrendingItem(watchers = 42, movie = media).toWallpaperCandidate(CatalogKind.TRENDING_MOVIE)
+        )
+
+        assertEquals(
+            WallpaperCandidate(
+                catalog = CatalogKind.POPULAR_LIST_MOVIE,
+                title = "Project Hail Mary",
+                year = 2026,
+                tmdbId = 490205,
+                imdbId = "tt12042730",
+                traktId = 1003596,
+                tvdbId = null
+            ),
+            TraktListItem(type = "movie", movie = media).toWallpaperCandidate(CatalogKind.POPULAR_LIST_MOVIE)
+        )
+    }
+
+    @Test
+    fun mapsPopularListsToSelectableOptions() {
+        val item = TraktPopularListItem(
+            likeCount = 109,
+            commentCount = 20,
+            list = TraktListSummary(
+                name = "Top Chihuahua Movies",
+                itemCount = 50,
+                ids = TraktListIds(trakt = 1338, slug = "top-chihuahua-movies"),
+                user = TraktUserSummary(username = "ignored", ids = TraktUserIds(slug = "list-owner"))
+            ),
+            user = TraktUserSummary(username = "Justin", ids = TraktUserIds(slug = "justin"))
+        )
+
+        assertEquals(
+            TraktPopularListOption(
+                key = "popular_list:justin:top-chihuahua-movies",
+                title = "Top Chihuahua Movies",
+                userId = "justin",
+                listId = "top-chihuahua-movies",
+                itemCount = 50
+            ),
+            item.toOption()
+        )
+    }
 }

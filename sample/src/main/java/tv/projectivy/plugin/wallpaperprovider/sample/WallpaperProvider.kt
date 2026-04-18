@@ -7,7 +7,7 @@ import android.content.Intent
 import android.database.Cursor
 import android.net.Uri
 import android.util.Log
-import com.butch708.projectivy.tvbgsuite.R
+import com.traktlistbackdrops.tv.R
 import tv.projectivy.plugin.wallpaperprovider.api.WallpaperProviderContract
 
 class WallpaperProvider : ContentProvider() {
