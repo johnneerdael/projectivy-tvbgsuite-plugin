@@ -21,7 +21,7 @@ class TraktDeviceAuthRepository(
     suspend fun start(): Result<TraktDeviceCodeResponse> {
         val clientId = BuildConfig.TRAKT_CLIENT_ID.trim()
         if (clientId.isBlank()) return Result.failure(IllegalStateException("TRAKT_CLIENT_ID is missing"))
-        val response = api.requestDeviceCode(TraktDeviceCodeRequest(clientId))
+        val response = api.requestDeviceCode(clientId, TraktDeviceCodeRequest(clientId))
         val body = response.body()
         if (!response.isSuccessful || body == null) {
             return Result.failure(IllegalStateException("Trakt device code failed: HTTP ${response.code()}"))
@@ -39,7 +39,7 @@ class TraktDeviceAuthRepository(
         if (clientId.isBlank() || clientSecret.isBlank()) return TraktPollResult.Failed("Trakt credentials are missing")
         if (deviceCode.isBlank()) return TraktPollResult.InvalidDeviceCode
 
-        val response = api.requestDeviceToken(TraktDeviceTokenRequest(deviceCode, clientId, clientSecret))
+        val response = api.requestDeviceToken(clientId, TraktDeviceTokenRequest(deviceCode, clientId, clientSecret))
         if (!response.isSuccessful) return mapPollStatus(response.code(), null)
         val body = response.body() ?: return TraktPollResult.Failed("Trakt token response was empty")
         saveToken(body)
@@ -52,10 +52,12 @@ class TraktDeviceAuthRepository(
         }
         val refreshToken = PreferencesManager.traktRefreshToken
         if (refreshToken.isBlank()) return null
+        val clientId = BuildConfig.TRAKT_CLIENT_ID.trim()
         val response = api.refreshToken(
+            clientId,
             TraktRefreshTokenRequest(
                 refreshToken = refreshToken,
-                clientId = BuildConfig.TRAKT_CLIENT_ID.trim(),
+                clientId = clientId,
                 clientSecret = BuildConfig.TRAKT_CLIENT_SECRET.trim(),
                 redirectUri = BuildConfig.TRAKT_REDIRECT_URI.ifBlank { "urn:ietf:wg:oauth:2.0:oob" }
             )

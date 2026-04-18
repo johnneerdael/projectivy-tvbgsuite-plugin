@@ -5,6 +5,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.Query
 
@@ -40,18 +41,40 @@ data class TraktTokenResponse(
 )
 
 interface TraktLocalApi {
+    @Headers("trakt-api-version: 2")
     @POST("oauth/device/code")
-    suspend fun requestDeviceCode(@Body body: TraktDeviceCodeRequest): Response<TraktDeviceCodeResponse>
+    suspend fun requestDeviceCode(
+        @Header("trakt-api-key") apiKey: String,
+        @Body body: TraktDeviceCodeRequest
+    ): Response<TraktDeviceCodeResponse>
 
+    @Headers("trakt-api-version: 2")
     @POST("oauth/device/token")
-    suspend fun requestDeviceToken(@Body body: TraktDeviceTokenRequest): Response<TraktTokenResponse>
+    suspend fun requestDeviceToken(
+        @Header("trakt-api-key") apiKey: String,
+        @Body body: TraktDeviceTokenRequest
+    ): Response<TraktTokenResponse>
 
+    @Headers("trakt-api-version: 2")
     @POST("oauth/token")
-    suspend fun refreshToken(@Body body: TraktRefreshTokenRequest): Response<TraktTokenResponse>
+    suspend fun refreshToken(
+        @Header("trakt-api-key") apiKey: String,
+        @Body body: TraktRefreshTokenRequest
+    ): Response<TraktTokenResponse>
 
+    @Headers("trakt-api-version: 2")
     @GET("movies/anticipated")
-    suspend fun anticipatedMovies(@Header("Authorization") authorization: String, @Query("limit") limit: Int = 20): Response<List<TraktAnticipatedItem>>
+    suspend fun anticipatedMovies(
+        @Header("trakt-api-key") apiKey: String,
+        @Header("Authorization") authorization: String,
+        @Query("limit") limit: Int = 20
+    ): Response<List<TraktAnticipatedItem>>
 
+    @Headers("trakt-api-version: 2")
     @GET("shows/anticipated")
-    suspend fun anticipatedShows(@Header("Authorization") authorization: String, @Query("limit") limit: Int = 20): Response<List<TraktAnticipatedItem>>
+    suspend fun anticipatedShows(
+        @Header("trakt-api-key") apiKey: String,
+        @Header("Authorization") authorization: String,
+        @Query("limit") limit: Int = 20
+    ): Response<List<TraktAnticipatedItem>>
 }

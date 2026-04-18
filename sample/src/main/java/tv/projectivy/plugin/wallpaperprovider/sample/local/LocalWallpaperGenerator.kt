@@ -33,8 +33,9 @@ class LocalWallpaperGenerator(
 
     suspend fun generate(): GeneratedWallpaper? = withContext(Dispatchers.IO) {
         val authorization = auth.authorizationHeader() ?: return@withContext null
-        val moviesResponse = traktApi.anticipatedMovies(authorization = authorization, limit = 20)
-        val showsResponse = traktApi.anticipatedShows(authorization = authorization, limit = 20)
+        val apiKey = BuildConfig.TRAKT_CLIENT_ID.trim()
+        val moviesResponse = traktApi.anticipatedMovies(apiKey = apiKey, authorization = authorization, limit = 20)
+        val showsResponse = traktApi.anticipatedShows(apiKey = apiKey, authorization = authorization, limit = 20)
         val movies = moviesResponse.body().orEmpty().mapNotNull { it.toWallpaperCandidate(CatalogKind.ANTICIPATED_MOVIE) }
         val shows = showsResponse.body().orEmpty().mapNotNull { it.toWallpaperCandidate(CatalogKind.ANTICIPATED_SHOW) }
         val candidates = interleave(movies, shows)
