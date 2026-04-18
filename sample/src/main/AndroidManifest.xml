@@ -48,6 +48,10 @@
             android:exported="true"
             android:targetActivity="tv.projectivy.plugin.wallpaperprovider.sample.SettingsActivity" />
 
+        <activity
+            android:name="tv.projectivy.plugin.wallpaperprovider.sample.TraktOAuthActivity"
+            android:exported="false" />
+
         <!-- ContentProvider ONLY for Idle Mode Changed (16) -->
         <provider
             android:name="tv.projectivy.plugin.wallpaperprovider.sample.WallpaperProvider"

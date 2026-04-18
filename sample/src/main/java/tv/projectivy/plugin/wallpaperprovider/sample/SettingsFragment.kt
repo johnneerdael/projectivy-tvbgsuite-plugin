@@ -1,26 +1,18 @@
 package tv.projectivy.plugin.wallpaperprovider.sample
 
+import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.leanback.app.GuidedStepSupportFragment
 import androidx.leanback.widget.GuidanceStylist.Guidance
 import androidx.leanback.widget.GuidedAction
-import com.butch708.projectivy.tvbgsuite.BuildConfig
 import com.butch708.projectivy.tvbgsuite.R
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.launch
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import tv.projectivy.plugin.wallpaperprovider.sample.local.TraktDeviceAuthRepository
-import tv.projectivy.plugin.wallpaperprovider.sample.local.TraktLocalApi
 
 class SettingsFragment : GuidedStepSupportFragment() {
 
     companion object {
         private const val ACTION_ID_TRAKT_STATUS = 1L
         private const val ACTION_ID_TRAKT_START = 2L
-        private const val ACTION_ID_TRAKT_POLL = 3L
         private const val ACTION_ID_CATALOGS = 4L
         private const val ACTION_ID_EVENT_IDLE = 5L
     }
@@ -49,21 +41,8 @@ class SettingsFragment : GuidedStepSupportFragment() {
         actions.add(
             GuidedAction.Builder(context)
                 .id(ACTION_ID_TRAKT_START)
-                .title("Start Trakt OAuth")
-                .description("Get a device code for trakt.tv/activate")
-                .build()
-        )
-
-        val activation = if (PreferencesManager.traktUserCode.isNotBlank()) {
-            "${PreferencesManager.traktVerificationUrl}/${PreferencesManager.traktUserCode}"
-        } else {
-            "Start OAuth first"
-        }
-        actions.add(
-            GuidedAction.Builder(context)
-                .id(ACTION_ID_TRAKT_POLL)
-                .title("Check Trakt OAuth")
-                .description(activation)
+                .title("Connect Trakt")
+                .description("Show QR code and connect automatically")
                 .build()
         )
 
@@ -105,8 +84,7 @@ class SettingsFragment : GuidedStepSupportFragment() {
 
     override fun onGuidedActionClicked(action: GuidedAction) {
         when (action.id) {
-            ACTION_ID_TRAKT_START -> startTraktOAuth()
-            ACTION_ID_TRAKT_POLL -> pollTraktOAuth()
+            ACTION_ID_TRAKT_START -> startActivity(Intent(requireContext(), TraktOAuthActivity::class.java))
             ACTION_ID_CATALOGS -> {
                 action.subActions = createCatalogActions()
                 notifyActionChanged(findActionPositionById(ACTION_ID_CATALOGS))
@@ -120,35 +98,6 @@ class SettingsFragment : GuidedStepSupportFragment() {
             }
         }
     }
-
-    private fun startTraktOAuth() {
-        MainScope().launch {
-            val result = TraktDeviceAuthRepository(traktApi()).start()
-            val message = result.fold(
-                onSuccess = { "${it.verificationUrl}/${it.userCode}" },
-                onFailure = { it.message ?: "Failed to start OAuth" }
-            )
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-            notifySettingsChanged()
-            reloadActions()
-        }
-    }
-
-    private fun pollTraktOAuth() {
-        MainScope().launch {
-            val result = TraktDeviceAuthRepository(traktApi()).poll()
-            Toast.makeText(context, result.toString(), Toast.LENGTH_LONG).show()
-            notifySettingsChanged()
-            reloadActions()
-        }
-    }
-
-    private fun traktApi(): TraktLocalApi =
-        Retrofit.Builder()
-            .baseUrl(BuildConfig.TRAKT_API_URL.ifBlank { "https://api.trakt.tv/" })
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(TraktLocalApi::class.java)
 
     private fun createCatalogActions(): List<GuidedAction> {
         val selected = PreferencesManager.selectedCatalogs
