@@ -15,6 +15,12 @@ data class WallpaperRenderSpec(
     val backdropBiasX: Float,
     val backdropBiasY: Float
 ) {
+    val leftEdgeMaskStartX: Float
+        get() = backdropBox.left
+
+    val bottomEdgeMaskEndY: Float
+        get() = backdropBox.bottom
+
     fun fullCanvasCoverRect(sourceWidth: Int, sourceHeight: Int): RectF {
         val scale = max(width / sourceWidth.toFloat(), height / sourceHeight.toFloat())
         val scaledW = sourceWidth * scale

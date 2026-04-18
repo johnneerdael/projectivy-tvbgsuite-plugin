@@ -22,7 +22,10 @@ class WallpaperRenderer(private val spec: WallpaperRenderSpec = WallpaperRenderS
 
         canvas.drawColor(Color.BLACK)
         drawDarkBackdropUnderlay(canvas, backdrop, paint)
+        val clippedBackdrop = canvas.save()
+        canvas.clipRect(spec.backdropBox)
         canvas.drawBitmap(backdrop, Rect(0, 0, backdrop.width, backdrop.height), spec.coverCropRect(backdrop.width, backdrop.height), paint)
+        canvas.restoreToCount(clippedBackdrop)
         drawLeftGradient(canvas)
         drawBottomGradient(canvas)
 
@@ -45,24 +48,35 @@ class WallpaperRenderer(private val spec: WallpaperRenderSpec = WallpaperRenderS
     }
 
     private fun drawLeftGradient(canvas: Canvas) {
+        canvas.drawRect(0f, 0f, spec.leftEdgeMaskStartX, spec.height.toFloat(), Paint().apply {
+            color = Color.BLACK
+        })
+
+        val opaqueStop = ((spec.leftGradientOpaqueUntilX - spec.leftEdgeMaskStartX) /
+            (spec.leftGradientEndX - spec.leftEdgeMaskStartX)).coerceIn(0f, 1f)
         val paint = Paint()
         paint.shader = LinearGradient(
-            0f, 0f, spec.leftGradientEndX, 0f,
-            intArrayOf(Color.argb(255, 8, 4, 0), Color.argb(250, 8, 4, 0), Color.argb(175, 10, 4, 0), Color.TRANSPARENT),
-            floatArrayOf(0f, spec.leftGradientOpaqueUntilX / spec.leftGradientEndX, 0.72f, 1f),
+            spec.leftEdgeMaskStartX, 0f, spec.leftGradientEndX, 0f,
+            intArrayOf(Color.BLACK, Color.BLACK, Color.argb(210, 0, 0, 0), Color.TRANSPARENT),
+            floatArrayOf(0f, opaqueStop, 0.72f, 1f),
             Shader.TileMode.CLAMP
         )
-        canvas.drawRect(0f, 0f, spec.leftGradientEndX, spec.height.toFloat(), paint)
+        canvas.drawRect(spec.leftEdgeMaskStartX, 0f, spec.leftGradientEndX, spec.height.toFloat(), paint)
     }
 
     private fun drawBottomGradient(canvas: Canvas) {
+        val strongStop = ((spec.bottomGradientStrongUntilY - spec.bottomGradientStartY) /
+            (spec.bottomEdgeMaskEndY - spec.bottomGradientStartY)).coerceIn(0f, 1f)
         val paint = Paint()
         paint.shader = LinearGradient(
-            0f, spec.bottomGradientStartY, 0f, spec.height.toFloat(),
-            intArrayOf(Color.TRANSPARENT, Color.argb(210, 8, 4, 0), Color.argb(255, 8, 4, 0)),
-            floatArrayOf(0f, (spec.bottomGradientStrongUntilY - spec.bottomGradientStartY) / (spec.height - spec.bottomGradientStartY), 1f),
+            0f, spec.bottomGradientStartY, 0f, spec.bottomEdgeMaskEndY,
+            intArrayOf(Color.TRANSPARENT, Color.argb(220, 0, 0, 0), Color.BLACK),
+            floatArrayOf(0f, strongStop, 1f),
             Shader.TileMode.CLAMP
         )
-        canvas.drawRect(0f, spec.bottomGradientStartY, spec.width.toFloat(), spec.height.toFloat(), paint)
+        canvas.drawRect(0f, spec.bottomGradientStartY, spec.width.toFloat(), spec.bottomEdgeMaskEndY, paint)
+        canvas.drawRect(0f, spec.bottomEdgeMaskEndY, spec.width.toFloat(), spec.height.toFloat(), Paint().apply {
+            color = Color.BLACK
+        })
     }
 }

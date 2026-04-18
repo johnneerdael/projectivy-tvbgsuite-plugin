@@ -33,6 +33,13 @@ class WallpaperRenderSpecTest {
     }
 
     @Test
+    fun edgeMasksAnchorToVisibleBackdropEdges() {
+        val spec = WallpaperRenderSpec.default()
+        assertEquals(spec.backdropBox.left, spec.leftEdgeMaskStartX, 0.01f)
+        assertEquals(spec.backdropBox.bottom, spec.bottomEdgeMaskEndY, 0.01f)
+    }
+
+    @Test
     fun containRectCentersLogoInsideBox() {
         val spec = WallpaperRenderSpec.default()
         val rect = spec.containRect(sourceWidth = 1000, sourceHeight = 300, box = spec.logoBox)
