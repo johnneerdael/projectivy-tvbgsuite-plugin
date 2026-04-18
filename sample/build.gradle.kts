@@ -11,6 +11,9 @@ val localProperties = Properties().apply {
 fun prop(name: String, defaultValue: String = ""): String =
     localProperties.getProperty(name, defaultValue).replace("\\", "\\\\").replace("\"", "\\\"")
 
+fun secretProp(name: String): String =
+    localProperties.getProperty(name) ?: System.getenv(name).orEmpty()
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -37,9 +40,24 @@ android {
 
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFilePath = secretProp("TVBGSUITE_RELEASE_STORE_FILE")
+            if (storeFilePath.isNotBlank()) {
+                storeFile = rootProject.file(storeFilePath)
+                storePassword = secretProp("TVBGSUITE_RELEASE_STORE_PASSWORD")
+                keyAlias = secretProp("TVBGSUITE_RELEASE_KEY_ALIAS")
+                keyPassword = secretProp("TVBGSUITE_RELEASE_KEY_PASSWORD").ifBlank { storePassword }
+            } else {
+                initWith(getByName("debug"))
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
