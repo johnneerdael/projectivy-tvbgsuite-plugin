@@ -1,513 +1,184 @@
 package tv.projectivy.plugin.wallpaperprovider.sample
 
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.leanback.app.GuidedStepSupportFragment
 import androidx.leanback.widget.GuidanceStylist.Guidance
 import androidx.leanback.widget.GuidedAction
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import com.butch708.projectivy.tvbgsuite.BuildConfig
+import com.butch708.projectivy.tvbgsuite.R
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import tv.projectivy.plugin.wallpaperprovider.sample.ApiService
-import com.butch708.projectivy.tvbgsuite.R
-import kotlin.math.roundToInt
+import tv.projectivy.plugin.wallpaperprovider.sample.local.TraktDeviceAuthRepository
+import tv.projectivy.plugin.wallpaperprovider.sample.local.TraktLocalApi
 
 class SettingsFragment : GuidedStepSupportFragment() {
 
-    private var availableYears: ArrayList<String> = ArrayList()
-    private var availableGenres: ArrayList<String> = ArrayList()
-    private var availableAges: ArrayList<String> = ArrayList()
-
     companion object {
-        private const val TAG = "SettingsFragment"
-        private const val ACTION_ID_SERVER_URL = 1L
-        private const val ACTION_ID_LAYOUT = 2L
-        private const val ACTION_ID_GENRE = 3L
-        private const val ACTION_ID_AGE = 5L
-        private const val ACTION_ID_YEAR = 6L
-        private const val ACTION_ID_RATING = 7L
-        private const val ACTION_ID_MAX_RATING = 8L
-        private const val ACTION_ID_EVENT_IDLE = 9L
-        private const val ACTION_ID_CLIENT = 10L
-        
-        private val DEFAULT_GENRES = listOf(
-            "Action", "Adventure", "Animation", "Comedy", "Crime",
-            "Documentary", "Drama", "Family", "Fantasy", "History", "Horror",
-            "Music", "Mystery", "Romance", "Science Fiction", "TV Movie",
-            "Thriller", "War", "Western"
-        )
-
-        private val DEFAULT_AGE_RATINGS = listOf(
-            "G", "PG", "PG-13", "R", "NC-17",
-            "TV-Y", "TV-Y7", "TV-G", "TV-PG", "TV-14", "TV-MA",
-            "FSK-0", "FSK-6", "FSK-12", "FSK-16", "FSK-18"
-        )
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        availableGenres.addAll(DEFAULT_GENRES)
-        availableAges.addAll(DEFAULT_AGE_RATINGS)
+        private const val ACTION_ID_TRAKT_STATUS = 1L
+        private const val ACTION_ID_TRAKT_START = 2L
+        private const val ACTION_ID_TRAKT_POLL = 3L
+        private const val ACTION_ID_CATALOGS = 4L
+        private const val ACTION_ID_EVENT_IDLE = 5L
     }
 
     override fun onCreateGuidance(savedInstanceState: Bundle?): Guidance {
         return Guidance(
             getString(R.string.plugin_name),
-            "Metadata-Driven Provider Configuration",
+            "Local Trakt + TMDB wallpaper generation",
             getString(R.string.settings),
             AppCompatResources.getDrawable(requireActivity(), R.drawable.ic_plugin)
         )
     }
 
     override fun onCreateActions(actions: MutableList<GuidedAction>, savedInstanceState: Bundle?) {
-        try {
-            PreferencesManager.init(requireContext())
+        PreferencesManager.init(requireContext())
 
-            val serverUrl = PreferencesManager.serverUrl
-            val selectedLayout = PreferencesManager.selectedLayout
-            val genreFilter = PreferencesManager.genreFilter
-            val ageFilter = PreferencesManager.ageFilter
-            val yearFilter = PreferencesManager.yearFilter
-            val minRating = PreferencesManager.minRating
-            val maxRating = PreferencesManager.maxRating
-            val refreshOnIdle = PreferencesManager.refreshOnIdleExit
-            val preferredClient = PreferencesManager.preferredClient
+        actions.add(
+            GuidedAction.Builder(context)
+                .id(ACTION_ID_TRAKT_STATUS)
+                .title("Trakt")
+                .description(if (PreferencesManager.traktAccessToken.isNotBlank()) "Connected" else "Not connected")
+                .enabled(false)
+                .build()
+        )
 
-            // Server URL
-            actions.add(GuidedAction.Builder(context)
-                .id(ACTION_ID_SERVER_URL)
-                .title("Server URL")
-                .description(if (serverUrl.isNotEmpty()) serverUrl else "http://...")
-                .editDescription(serverUrl)
-                .descriptionEditable(true)
-                .build())
+        actions.add(
+            GuidedAction.Builder(context)
+                .id(ACTION_ID_TRAKT_START)
+                .title("Start Trakt OAuth")
+                .description("Get a device code for trakt.tv/activate")
+                .build()
+        )
 
-            // Layout / Collection
-            actions.add(GuidedAction.Builder(context)
-                .id(ACTION_ID_LAYOUT)
-                .title("Collection / Layout")
-                .description(selectedLayout)
-                .subActions(emptyList()) 
-                .build())
+        val activation = if (PreferencesManager.traktUserCode.isNotBlank()) {
+            "${PreferencesManager.traktVerificationUrl}/${PreferencesManager.traktUserCode}"
+        } else {
+            "Start OAuth first"
+        }
+        actions.add(
+            GuidedAction.Builder(context)
+                .id(ACTION_ID_TRAKT_POLL)
+                .title("Check Trakt OAuth")
+                .description(activation)
+                .build()
+        )
 
-            // Genre Filter
-            actions.add(GuidedAction.Builder(context)
-                .id(ACTION_ID_GENRE)
-                .title("Genre Filter")
-                .description(if (genreFilter.isNotEmpty()) genreFilter else "All")
-                .build())
+        actions.add(
+            GuidedAction.Builder(context)
+                .id(ACTION_ID_CATALOGS)
+                .title("Catalogs")
+                .description(PreferencesManager.selectedCatalogs)
+                .subActions(createCatalogActions())
+                .build()
+        )
 
-            // Age Rating
-            actions.add(GuidedAction.Builder(context)
-                .id(ACTION_ID_AGE)
-                .title("Age Rating")
-                .description(if (ageFilter.isNotEmpty()) ageFilter else "Any")
-                .build())
-
-            // Year Filter
-            actions.add(GuidedAction.Builder(context)
-                .id(ACTION_ID_YEAR)
-                .title("Year Filter")
-                .description(if (yearFilter.isNotEmpty()) yearFilter else "Any")
-                .build())
-
-            // Rating Filter
-            actions.add(GuidedAction.Builder(context)
-                .id(ACTION_ID_RATING)
-                .title("Minimum Rating")
-                .description(getStarsString(minRating))
-                .subActions(createRatingSubActions(minRating, 2))
-                .build())
-
-            // Max Rating Filter
-            actions.add(GuidedAction.Builder(context)
-                .id(ACTION_ID_MAX_RATING)
-                .title("Maximum Rating")
-                .description(getStarsString(maxRating))
-                .subActions(createRatingSubActions(maxRating, 3))
-                .build())
-
-            // Client Selection
-            actions.add(GuidedAction.Builder(context)
-                .id(ACTION_ID_CLIENT)
-                .title("Preferred Client")
-                .description(ClientManager.getInstalledClients(requireContext()).find { it.packageName == preferredClient }?.name ?: "Auto/Default")
-                .subActions(emptyList())
-                .build())
-
-            // Events Section
-            actions.add(GuidedAction.Builder(context)
+        actions.add(
+            GuidedAction.Builder(context)
                 .id(ACTION_ID_EVENT_IDLE)
                 .title("Refresh on idle exit")
                 .checkSetId(GuidedAction.CHECKBOX_CHECK_SET_ID)
-                .checked(refreshOnIdle)
-                .build())
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Error creating actions", e)
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // Update descriptions dynamically on resume
-        updateGenreAction(availableGenres)
-        updateAgeRatingAction(availableAges)
-        updateYearAction(availableYears)
-        updateClientAction()
-        refreshAllData()
-    }
-
-    private fun refreshAllData() {
-        val serverUrl = PreferencesManager.serverUrl
-        if (serverUrl.isBlank()) return
-        
-        val apiService = try {
-            Retrofit.Builder()
-                .baseUrl(serverUrl)
-                .addConverterFactory(GsonConverterFactory.create())
+                .checked(PreferencesManager.refreshOnIdleExit)
                 .build()
-                .create(ApiService::class.java)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        } ?: return
-
-        apiService.getLayouts().enqueue(object : Callback<List<String>> {
-            override fun onResponse(call: Call<List<String>>, response: Response<List<String>>) {
-                if (response.isSuccessful) {
-                    val layouts = response.body() ?: emptyList()
-                    updateLayoutAction(layouts)
-                }
-            }
-            override fun onFailure(call: Call<List<String>>, t: Throwable) {
-                Log.e(TAG, "Failed to fetch layouts", t)
-            }
-        })
-
-        apiService.getGenres().enqueue(object : Callback<List<String>> {
-            override fun onResponse(call: Call<List<String>>, response: Response<List<String>>) {
-                if (response.isSuccessful) {
-                    val genres = response.body() ?: emptyList()
-                    if (genres.isNotEmpty()) {
-                        updateGenreAction(genres)
-                    } else {
-                        Log.w(TAG, "Fetched empty genre list, keeping defaults")
-                    }
-                }
-            }
-            override fun onFailure(call: Call<List<String>>, t: Throwable) {
-                Log.e(TAG, "Failed to fetch genres", t)
-            }
-        })
-
-        apiService.getAgeRatings().enqueue(object : Callback<List<String>> {
-            override fun onResponse(call: Call<List<String>>, response: Response<List<String>>) {
-                if (response.isSuccessful) {
-                    val ages = response.body() ?: emptyList()
-                    if (ages.isNotEmpty()) {
-                        updateAgeRatingAction(ages)
-                    } else {
-                         Log.w(TAG, "Fetched empty age list, keeping defaults")
-                    }
-                }
-            }
-            override fun onFailure(call: Call<List<String>>, t: Throwable) {
-                Log.e(TAG, "Failed to fetch age ratings", t)
-            }
-        })
-
-        apiService.getYears().enqueue(object : Callback<List<String>> {
-             override fun onResponse(call: Call<List<String>>, response: Response<List<String>>) {
-                 if (response.isSuccessful) {
-                     val years = response.body() ?: emptyList()
-                     if (years.isNotEmpty()) {
-                         updateYearAction(years)
-                     }
-                 }
-             }
-             override fun onFailure(call: Call<List<String>>, t: Throwable) {
-                 Log.e(TAG, "Failed to fetch years", t)
-             }
-        })
-    }
-
-    private fun updateLayoutAction(layouts: List<String>) {
-        val actions = actions
-        val layoutActionIndex = actions.indexOfFirst { it.id == ACTION_ID_LAYOUT }
-        if (layoutActionIndex != -1) {
-            val layoutAction = actions[layoutActionIndex]
-            val subActions = layouts.mapIndexed { index, name ->
-                GuidedAction.Builder(context)
-                    .id(100L + index)
-                    .title(name)
-                    .checkSetId(1)
-                    .checked(name == PreferencesManager.selectedLayout)
-                    .build()
-            }
-            layoutAction.subActions = subActions
-            notifyActionChanged(layoutActionIndex)
-        }
-    }
-
-    private fun updateGenreAction(genres: List<String>) {
-        availableGenres.clear()
-        availableGenres.addAll(genres)
-        
-        val actions = actions
-        val genreActionIndex = actions.indexOfFirst { it.id == ACTION_ID_GENRE }
-        if (genreActionIndex != -1) {
-            val genreAction = actions[genreActionIndex]
-            val genreFilterString = PreferencesManager.genreFilter
-            
-            val descriptionText = if (genreFilterString.isEmpty()) {
-                "All"
-            } else {
-                val selectedCount = genreFilterString.split(",").filter { it.isNotBlank() }.size
-                if (selectedCount == availableGenres.size) {
-                    "All"
-                } else {
-                    "$selectedCount selected"
-                }
-            }
-            genreAction.description = descriptionText
-            genreAction.subActions = null 
-            notifyActionChanged(genreActionIndex)
-        }
-    }
-
-    private fun updateAgeRatingAction(ages: List<String>) {
-        availableAges.clear()
-        availableAges.addAll(ages)
-        
-        val actions = actions
-        val ageActionIndex = actions.indexOfFirst { it.id == ACTION_ID_AGE }
-        if (ageActionIndex != -1) {
-            val ageAction = actions[ageActionIndex]
-            val ageFilterString = PreferencesManager.ageFilter
-            
-            val descriptionText = if (ageFilterString.isEmpty()) {
-                "Any"
-            } else {
-                val selectedCount = ageFilterString.split(",").filter { it.isNotBlank() }.size
-                if (selectedCount == availableAges.size) {
-                    "Any"
-                } else {
-                    "$selectedCount selected"
-                }
-            }
-            ageAction.description = descriptionText
-            ageAction.subActions = null 
-            notifyActionChanged(ageActionIndex)
-        }
-    }
-
-    private fun updateYearAction(years: List<String>) {
-        availableYears.clear()
-        availableYears.addAll(years)
-        
-        val actions = actions
-        val yearActionIndex = actions.indexOfFirst { it.id == ACTION_ID_YEAR }
-        if (yearActionIndex != -1) {
-            val yearAction = actions[yearActionIndex]
-            val yearFilter = PreferencesManager.yearFilter
-            val descriptionText = if (yearFilter.isEmpty()) {
-                "Any"
-            } else {
-                yearFilter // Already formatted as YYYY or YYYY-YYYY
-            }
-            yearAction.description = descriptionText
-            yearAction.subActions = null
-            notifyActionChanged(yearActionIndex)
-        }
-    }
-
-    private fun updateClientAction() {
-        val actions = actions
-        val clientActionIndex = actions.indexOfFirst { it.id == ACTION_ID_CLIENT }
-        if (clientActionIndex != -1) {
-            val clientAction = actions[clientActionIndex]
-            val clients = ClientManager.getInstalledClients(requireContext())
-            
-            // Re-populate sub-actions every time to capture any newly installed apps
-            val subActions = clients.mapIndexed { index, client ->
-                GuidedAction.Builder(context)
-                    .id(300L + index)
-                    .title(client.name)
-                    .description(client.packageName)
-                    .checkSetId(4) // CheckSet ID 4 for clients
-                    .checked(client.packageName == PreferencesManager.preferredClient)
-                    .build()
-            }
-            
-            clientAction.subActions = subActions
-            
-            // Update description
-            val currentClient = clients.find { it.packageName == PreferencesManager.preferredClient }
-            clientAction.description = currentClient?.name ?: "Select Client"
-            
-            notifyActionChanged(clientActionIndex)
-        }
-    }
-
-    private fun notifySettingsChanged() {
-        (requireActivity() as? SettingsActivity)?.requestWallpaperUpdate()
+        )
     }
 
     override fun onSubGuidedActionClicked(action: GuidedAction): Boolean {
-        // Layout selection
-        if (action.checkSetId == 1) {
-            val layoutName = action.title.toString()
-            PreferencesManager.selectedLayout = layoutName
-            
-            val layoutActionIndex = actions.indexOfFirst { it.id == ACTION_ID_LAYOUT }
-            if (layoutActionIndex != -1) {
-                actions[layoutActionIndex].description = layoutName
-                notifyActionChanged(layoutActionIndex)
-            }
+        if (action.id == 401L || action.id == 402L) {
+            val key = if (action.id == 401L) "anticipated_movies" else "anticipated_shows"
+            val selected = PreferencesManager.selectedCatalogs
+                .split(',')
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .toMutableSet()
+            if (selected.contains(key)) selected.remove(key) else selected.add(key)
+            PreferencesManager.selectedCatalogs = selected.joinToString(",")
+            reloadActions()
             notifySettingsChanged()
             return true
-        } else if (action.checkSetId == 2) {
-            val rating = action.title.toString().toFloatOrNull() ?: 7.0f
-            PreferencesManager.minRating = rating
-            
-            // Validation: if min > max, adjust max
-            if (rating > PreferencesManager.maxRating) {
-                PreferencesManager.maxRating = rating
-                val maxActionIndex = actions.indexOfFirst { it.id == ACTION_ID_MAX_RATING }
-                if (maxActionIndex != -1) {
-                    actions[maxActionIndex].description = getStarsString(rating)
-                    actions[maxActionIndex].subActions = createRatingSubActions(rating, 3)
-                    notifyActionChanged(maxActionIndex)
-                }
-            }
-            
-            val ratingActionIndex = actions.indexOfFirst { it.id == ACTION_ID_RATING }
-            if (ratingActionIndex != -1) {
-                actions[ratingActionIndex].description = getStarsString(rating)
-                actions[ratingActionIndex].subActions = createRatingSubActions(rating, 2)
-                notifyActionChanged(ratingActionIndex)
-            }
-            notifySettingsChanged()
-            return true
-        } else if (action.checkSetId == 3) {
-            val rating = action.title.toString().toFloatOrNull() ?: 10.0f
-            PreferencesManager.maxRating = rating
-
-            // Validation: if max < min, adjust min
-            if (rating < PreferencesManager.minRating) {
-                PreferencesManager.minRating = rating
-                val minActionIndex = actions.indexOfFirst { it.id == ACTION_ID_RATING }
-                if (minActionIndex != -1) {
-                    actions[minActionIndex].description = getStarsString(rating)
-                    actions[minActionIndex].subActions = createRatingSubActions(rating, 2)
-                    notifyActionChanged(minActionIndex)
-                }
-            }
-            
-            val maxActionIndex = actions.indexOfFirst { it.id == ACTION_ID_MAX_RATING }
-            if (maxActionIndex != -1) {
-                actions[maxActionIndex].description = getStarsString(rating)
-                actions[maxActionIndex].subActions = createRatingSubActions(rating, 3)
-                notifyActionChanged(maxActionIndex)
-            }
-            notifySettingsChanged()
-            return true
-        } else if (action.checkSetId == 4) {
-             // Client selection
-             val selectedPackage = action.description.toString()
-             PreferencesManager.preferredClient = selectedPackage
-             updateClientAction() // Refresh UI (checkmarks and description)
-             notifySettingsChanged()
-             return true
         }
         return super.onSubGuidedActionClicked(action)
     }
 
     override fun onGuidedActionClicked(action: GuidedAction) {
         when (action.id) {
-            ACTION_ID_SERVER_URL -> {
-                val params = action.editDescription
-                PreferencesManager.serverUrl = params.toString()
-                findActionById(ACTION_ID_SERVER_URL)?.description = params
-                notifyActionChanged(findActionPositionById(ACTION_ID_SERVER_URL))
-                refreshAllData()
-                notifySettingsChanged()
-            }
-            ACTION_ID_LAYOUT -> {
-                if (action.subActions.isNullOrEmpty()) {
-                    refreshAllData()
-                    Toast.makeText(context, "Fetching layouts...", Toast.LENGTH_SHORT).show()
-                }
-            }
-            ACTION_ID_GENRE -> {
-                 if (availableGenres.isEmpty()) {
-                    refreshAllData()
-                    Toast.makeText(context, "Fetching genres...", Toast.LENGTH_SHORT).show()
-                } else {
-                    val fragment = MultiSelectFragment.newInstance(MultiSelectFragment.TYPE_GENRE, availableGenres)
-                    parentFragmentManager.beginTransaction()
-                        .replace(android.R.id.content, fragment)
-                        .addToBackStack(null)
-                        .commit()
-                }
-            }
-            ACTION_ID_AGE -> {
-                 if (availableAges.isEmpty()) {
-                    refreshAllData()
-                    Toast.makeText(context, "Fetching age ratings...", Toast.LENGTH_SHORT).show()
-                } else {
-                    val fragment = MultiSelectFragment.newInstance(MultiSelectFragment.TYPE_AGE, availableAges)
-                    parentFragmentManager.beginTransaction()
-                        .replace(android.R.id.content, fragment)
-                        .addToBackStack(null)
-                        .commit()
-                }
-            }
-            ACTION_ID_YEAR -> {
-                 if (availableYears.isEmpty()) {
-                    refreshAllData()
-                    Toast.makeText(context, "Fetching years...", Toast.LENGTH_SHORT).show()
-                } else {
-                    val fragment = YearPickerFragment.newInstance(availableYears)
-                    parentFragmentManager.beginTransaction()
-                        .replace(android.R.id.content, fragment)
-                        .addToBackStack(null)
-                        .commit()
-                }
+            ACTION_ID_TRAKT_START -> startTraktOAuth()
+            ACTION_ID_TRAKT_POLL -> pollTraktOAuth()
+            ACTION_ID_CATALOGS -> {
+                action.subActions = createCatalogActions()
+                notifyActionChanged(findActionPositionById(ACTION_ID_CATALOGS))
             }
             ACTION_ID_EVENT_IDLE -> {
                 val newState = !PreferencesManager.refreshOnIdleExit
                 PreferencesManager.refreshOnIdleExit = newState
                 action.isChecked = newState
                 notifyActionChanged(findActionPositionById(ACTION_ID_EVENT_IDLE))
+                notifySettingsChanged()
             }
         }
     }
 
-    private fun getStarsString(rating: Float): String {
-        val stars = rating.roundToInt()
-        val sb = StringBuilder()
-        for (i in 1..10) {
-            if (i <= stars) sb.append("★") else sb.append("☆")
+    private fun startTraktOAuth() {
+        MainScope().launch {
+            val result = TraktDeviceAuthRepository(traktApi()).start()
+            val message = result.fold(
+                onSuccess = { "${it.verificationUrl}/${it.userCode}" },
+                onFailure = { it.message ?: "Failed to start OAuth" }
+            )
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            notifySettingsChanged()
+            reloadActions()
         }
-        return "$sb ($rating / 10)"
     }
 
-    private fun createRatingSubActions(currentRating: Float, checkSetId: Int): List<GuidedAction> {
-        val actions = ArrayList<GuidedAction>()
-        for (i in 1..10) {
-            actions.add(GuidedAction.Builder(context)
-                .id(200L + i + (checkSetId * 100)) // Unique ID based on checkSetId to avoid collision
-                .title("$i")
-                .checkSetId(checkSetId)
-                .checked(i.toFloat() == currentRating)
-                .build())
+    private fun pollTraktOAuth() {
+        MainScope().launch {
+            val result = TraktDeviceAuthRepository(traktApi()).poll()
+            Toast.makeText(context, result.toString(), Toast.LENGTH_LONG).show()
+            notifySettingsChanged()
+            reloadActions()
         }
-        return actions
+    }
+
+    private fun traktApi(): TraktLocalApi =
+        Retrofit.Builder()
+            .baseUrl(BuildConfig.TRAKT_API_URL.ifBlank { "https://api.trakt.tv/" })
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(TraktLocalApi::class.java)
+
+    private fun createCatalogActions(): List<GuidedAction> {
+        val selected = PreferencesManager.selectedCatalogs
+            .split(',')
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .toSet()
+        return listOf(
+            GuidedAction.Builder(context)
+                .id(401L)
+                .title("Anticipated Movies")
+                .checkSetId(GuidedAction.CHECKBOX_CHECK_SET_ID)
+                .checked("anticipated_movies" in selected)
+                .build(),
+            GuidedAction.Builder(context)
+                .id(402L)
+                .title("Anticipated Shows")
+                .checkSetId(GuidedAction.CHECKBOX_CHECK_SET_ID)
+                .checked("anticipated_shows" in selected)
+                .build()
+        )
+    }
+
+    private fun reloadActions() {
+        actions.clear()
+        onCreateActions(actions, null)
+        actions.indices.forEach(::notifyActionChanged)
+    }
+
+    private fun notifySettingsChanged() {
+        (requireActivity() as? SettingsActivity)?.requestWallpaperUpdate()
     }
 }
