@@ -36,6 +36,13 @@ object PreferencesManager {
     private const val REFRESH_ON_IDLE_EXIT_KEY = "pref_refresh_on_idle_exit"
     private const val LAST_WALLPAPER_URI_KEY = "last_wallpaper_uri"
     private const val LAST_WALLPAPER_AUTHOR_KEY = "last_wallpaper_author"
+    private const val TRAKT_ACCESS_TOKEN_KEY = "trakt_access_token"
+    private const val TRAKT_REFRESH_TOKEN_KEY = "trakt_refresh_token"
+    private const val TRAKT_EXPIRES_AT_KEY = "trakt_expires_at"
+    private const val TRAKT_DEVICE_CODE_KEY = "trakt_device_code"
+    private const val TRAKT_USER_CODE_KEY = "trakt_user_code"
+    private const val TRAKT_VERIFICATION_URL_KEY = "trakt_verification_url"
+    private const val SELECTED_CATALOGS_KEY = "selected_catalogs"
 
     lateinit var preferences: SharedPreferences
 
@@ -122,6 +129,34 @@ object PreferencesManager {
     var preferredClient: String
         get() = PreferencesManager["preferred_client_key", "org.moonfin.androidtv"]
         set(value) { PreferencesManager["preferred_client_key"] = value }
+
+    var traktAccessToken: String
+        get() = PreferencesManager[TRAKT_ACCESS_TOKEN_KEY, ""]
+        set(value) { PreferencesManager[TRAKT_ACCESS_TOKEN_KEY] = value }
+
+    var traktRefreshToken: String
+        get() = PreferencesManager[TRAKT_REFRESH_TOKEN_KEY, ""]
+        set(value) { PreferencesManager[TRAKT_REFRESH_TOKEN_KEY] = value }
+
+    var traktExpiresAt: Long
+        get() = PreferencesManager[TRAKT_EXPIRES_AT_KEY, 0L]
+        set(value) { PreferencesManager[TRAKT_EXPIRES_AT_KEY] = value }
+
+    var traktDeviceCode: String
+        get() = PreferencesManager[TRAKT_DEVICE_CODE_KEY, ""]
+        set(value) { PreferencesManager[TRAKT_DEVICE_CODE_KEY] = value }
+
+    var traktUserCode: String
+        get() = PreferencesManager[TRAKT_USER_CODE_KEY, ""]
+        set(value) { PreferencesManager[TRAKT_USER_CODE_KEY] = value }
+
+    var traktVerificationUrl: String
+        get() = PreferencesManager[TRAKT_VERIFICATION_URL_KEY, ""]
+        set(value) { PreferencesManager[TRAKT_VERIFICATION_URL_KEY] = value }
+
+    var selectedCatalogs: String
+        get() = PreferencesManager[SELECTED_CATALOGS_KEY, "anticipated_movies,anticipated_shows"]
+        set(value) { PreferencesManager[SELECTED_CATALOGS_KEY] = value }
 
     fun export(): String {
         return convertSharedPreferencesToJson(preferences)
