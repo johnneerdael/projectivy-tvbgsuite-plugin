@@ -15,7 +15,13 @@ class WallpaperRenderSpecTest {
     fun coverRectBiasesBackdropToUpperRight() {
         val spec = WallpaperRenderSpec.default()
         val rect = spec.coverCropRect(sourceWidth = 1920, sourceHeight = 1080)
-        assertRectEquals(RectF(0f, 0f, 3840f, 2160f), rect)
+        assertRectEquals(RectF(520f, 0f, 4004.44f, 1960f), rect)
+    }
+
+    @Test
+    fun bottomGradientCoversLauncherRows() {
+        val spec = WallpaperRenderSpec.default()
+        assertEquals(1320f, spec.bottomGradientStartY, 0.01f)
     }
 
     @Test

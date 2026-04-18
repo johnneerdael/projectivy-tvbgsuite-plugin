@@ -7,19 +7,22 @@ data class WallpaperRenderSpec(
     val width: Int,
     val height: Int,
     val logoBox: RectF,
+    val backdropBox: RectF,
     val leftGradientEndX: Float,
     val bottomGradientStartY: Float,
     val backdropBiasX: Float,
     val backdropBiasY: Float
 ) {
     fun coverCropRect(sourceWidth: Int, sourceHeight: Int): RectF {
-        val scale = max(width / sourceWidth.toFloat(), height / sourceHeight.toFloat())
+        val boxWidth = backdropBox.right - backdropBox.left
+        val boxHeight = backdropBox.bottom - backdropBox.top
+        val scale = max(boxWidth / sourceWidth.toFloat(), boxHeight / sourceHeight.toFloat())
         val scaledW = sourceWidth * scale
         val scaledH = sourceHeight * scale
-        val overflowX = scaledW - width
-        val overflowY = scaledH - height
-        val left = -overflowX * backdropBiasX
-        val top = -overflowY * backdropBiasY
+        val overflowX = scaledW - boxWidth
+        val overflowY = scaledH - boxHeight
+        val left = backdropBox.left - overflowX * backdropBiasX
+        val top = backdropBox.top - overflowY * backdropBiasY
         return RectF(left, top, left + scaledW, top + scaledH)
     }
 
@@ -39,8 +42,9 @@ data class WallpaperRenderSpec(
             width = 3840,
             height = 2160,
             logoBox = RectF(380f, 250f, 1420f, 620f),
-            leftGradientEndX = 1900f,
-            bottomGradientStartY = 1580f,
+            backdropBox = RectF(520f, 0f, 3840f, 1960f),
+            leftGradientEndX = 2100f,
+            bottomGradientStartY = 1320f,
             backdropBiasX = 0.72f,
             backdropBiasY = 0.18f
         )

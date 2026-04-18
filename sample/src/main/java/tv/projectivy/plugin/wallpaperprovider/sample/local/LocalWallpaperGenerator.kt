@@ -42,8 +42,9 @@ class LocalWallpaperGenerator(
 
         for (candidate in candidates) {
             val details = tmdb.details(candidate) ?: continue
+            if (details.logoUrl.isNullOrBlank()) continue
             val backdrop = downloadBitmap(details.backdropUrl) ?: continue
-            val logo = details.logoUrl?.let { downloadBitmap(it) }
+            val logo = downloadBitmap(details.logoUrl) ?: continue
             val file = cache.outputFile(details)
             renderer.render(backdrop = backdrop, logo = logo, outputFile = file)
             return@withContext GeneratedWallpaper(
@@ -72,5 +73,8 @@ class LocalWallpaperGenerator(
             }
             return result
         }
+
+        fun isRenderable(details: TmdbDetails, hasBackdrop: Boolean, hasLogo: Boolean): Boolean =
+            hasBackdrop && hasLogo && details.backdropUrl.isNotBlank() && !details.logoUrl.isNullOrBlank()
     }
 }

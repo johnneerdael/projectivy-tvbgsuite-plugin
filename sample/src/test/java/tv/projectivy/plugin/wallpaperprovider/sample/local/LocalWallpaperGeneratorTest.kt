@@ -16,4 +16,20 @@ class LocalWallpaperGeneratorTest {
 
         assertEquals(listOf("Movie A", "Show A", "Movie B"), LocalWallpaperGenerator.interleave(movies, shows).map { it.title })
     }
+
+    @Test
+    fun rejectsGenerationsWithoutBackdropOrLogo() {
+        val details = TmdbDetails(
+            id = 1,
+            title = "Movie",
+            year = 2026,
+            backdropUrl = "https://image.tmdb.org/t/p/original/backdrop.jpg",
+            logoUrl = "https://image.tmdb.org/t/p/original/logo.png"
+        )
+
+        assertEquals(true, LocalWallpaperGenerator.isRenderable(details, hasBackdrop = true, hasLogo = true))
+        assertEquals(false, LocalWallpaperGenerator.isRenderable(details, hasBackdrop = false, hasLogo = true))
+        assertEquals(false, LocalWallpaperGenerator.isRenderable(details, hasBackdrop = true, hasLogo = false))
+        assertEquals(false, LocalWallpaperGenerator.isRenderable(details.copy(logoUrl = null), hasBackdrop = true, hasLogo = true))
+    }
 }
