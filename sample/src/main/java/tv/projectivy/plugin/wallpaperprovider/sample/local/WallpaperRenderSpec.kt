@@ -10,9 +10,20 @@ data class WallpaperRenderSpec(
     val backdropBox: RectF,
     val leftGradientEndX: Float,
     val bottomGradientStartY: Float,
+    val leftGradientOpaqueUntilX: Float,
+    val bottomGradientStrongUntilY: Float,
     val backdropBiasX: Float,
     val backdropBiasY: Float
 ) {
+    fun fullCanvasCoverRect(sourceWidth: Int, sourceHeight: Int): RectF {
+        val scale = max(width / sourceWidth.toFloat(), height / sourceHeight.toFloat())
+        val scaledW = sourceWidth * scale
+        val scaledH = sourceHeight * scale
+        val left = (width - scaledW) / 2f
+        val top = (height - scaledH) / 2f
+        return RectF(left, top, left + scaledW, top + scaledH)
+    }
+
     fun coverCropRect(sourceWidth: Int, sourceHeight: Int): RectF {
         val boxWidth = backdropBox.right - backdropBox.left
         val boxHeight = backdropBox.bottom - backdropBox.top
@@ -45,6 +56,8 @@ data class WallpaperRenderSpec(
             backdropBox = RectF(520f, 0f, 3840f, 1960f),
             leftGradientEndX = 2100f,
             bottomGradientStartY = 1320f,
+            leftGradientOpaqueUntilX = 760f,
+            bottomGradientStrongUntilY = 1740f,
             backdropBiasX = 0.72f,
             backdropBiasY = 0.18f
         )

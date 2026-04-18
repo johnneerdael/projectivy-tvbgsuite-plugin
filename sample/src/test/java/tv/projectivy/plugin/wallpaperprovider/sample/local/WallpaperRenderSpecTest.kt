@@ -19,9 +19,17 @@ class WallpaperRenderSpecTest {
     }
 
     @Test
+    fun fullCanvasUnderlayStartsAtScreenEdge() {
+        val spec = WallpaperRenderSpec.default()
+        val rect = spec.fullCanvasCoverRect(sourceWidth = 1920, sourceHeight = 1080)
+        assertRectEquals(RectF(0f, 0f, 3840f, 2160f), rect)
+    }
+
+    @Test
     fun bottomGradientCoversLauncherRows() {
         val spec = WallpaperRenderSpec.default()
         assertEquals(1320f, spec.bottomGradientStartY, 0.01f)
+        assertEquals(1740f, spec.bottomGradientStrongUntilY, 0.01f)
     }
 
     @Test

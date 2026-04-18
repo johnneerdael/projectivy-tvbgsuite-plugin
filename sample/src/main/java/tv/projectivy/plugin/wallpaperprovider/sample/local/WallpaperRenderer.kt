@@ -21,6 +21,7 @@ class WallpaperRenderer(private val spec: WallpaperRenderSpec = WallpaperRenderS
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
 
         canvas.drawColor(Color.BLACK)
+        drawDarkBackdropUnderlay(canvas, backdrop, paint)
         canvas.drawBitmap(backdrop, Rect(0, 0, backdrop.width, backdrop.height), spec.coverCropRect(backdrop.width, backdrop.height), paint)
         drawLeftGradient(canvas)
         drawBottomGradient(canvas)
@@ -36,12 +37,19 @@ class WallpaperRenderer(private val spec: WallpaperRenderSpec = WallpaperRenderS
         output.recycle()
     }
 
+    private fun drawDarkBackdropUnderlay(canvas: Canvas, backdrop: Bitmap, paint: Paint) {
+        paint.alpha = 90
+        canvas.drawBitmap(backdrop, Rect(0, 0, backdrop.width, backdrop.height), spec.fullCanvasCoverRect(backdrop.width, backdrop.height), paint)
+        paint.alpha = 255
+        canvas.drawColor(Color.argb(135, 0, 0, 0))
+    }
+
     private fun drawLeftGradient(canvas: Canvas) {
         val paint = Paint()
         paint.shader = LinearGradient(
             0f, 0f, spec.leftGradientEndX, 0f,
-            intArrayOf(Color.argb(230, 10, 4, 0), Color.argb(160, 20, 8, 0), Color.TRANSPARENT),
-            floatArrayOf(0f, 0.55f, 1f),
+            intArrayOf(Color.argb(255, 8, 4, 0), Color.argb(250, 8, 4, 0), Color.argb(175, 10, 4, 0), Color.TRANSPARENT),
+            floatArrayOf(0f, spec.leftGradientOpaqueUntilX / spec.leftGradientEndX, 0.72f, 1f),
             Shader.TileMode.CLAMP
         )
         canvas.drawRect(0f, 0f, spec.leftGradientEndX, spec.height.toFloat(), paint)
@@ -51,8 +59,8 @@ class WallpaperRenderer(private val spec: WallpaperRenderSpec = WallpaperRenderS
         val paint = Paint()
         paint.shader = LinearGradient(
             0f, spec.bottomGradientStartY, 0f, spec.height.toFloat(),
-            Color.TRANSPARENT,
-            Color.argb(245, 8, 4, 0),
+            intArrayOf(Color.TRANSPARENT, Color.argb(210, 8, 4, 0), Color.argb(255, 8, 4, 0)),
+            floatArrayOf(0f, (spec.bottomGradientStrongUntilY - spec.bottomGradientStartY) / (spec.height - spec.bottomGradientStartY), 1f),
             Shader.TileMode.CLAMP
         )
         canvas.drawRect(0f, spec.bottomGradientStartY, spec.width.toFloat(), spec.height.toFloat(), paint)
