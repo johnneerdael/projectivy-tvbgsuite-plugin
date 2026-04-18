@@ -19,3 +19,11 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Gson/Retrofit DTOs used by Trakt and TMDB must keep field names/annotations in release builds.
+-keepattributes Signature
+-keepattributes *Annotation*
+-keepattributes RuntimeVisibleAnnotations
+-keep class com.google.gson.reflect.TypeToken { *; }
+-keep class * extends com.google.gson.reflect.TypeToken
+-keep class tv.projectivy.plugin.wallpaperprovider.sample.local.** { *; }
