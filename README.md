@@ -66,6 +66,21 @@ The backend provides the following REST API endpoints:
     *   **UI**: `SettingsActivity` and `SettingsFragment` (using Leanback `GuidedStepSupportFragment`) provide the TV-optimized configuration interface.
     *   **Deep Linking**: Custom logic in `WallpaperProviderService` parses Jellyfin URIs to support specific client intents.
 
+## Local Generator Build Properties
+
+Create `local.properties` in the project root:
+
+```properties
+TMDB_API_KEY=your_tmdb_v3_api_key
+TMDB_API_URL=https://api.themoviedb.org/3/
+TRAKT_CLIENT_ID=your_trakt_client_id
+TRAKT_CLIENT_SECRET=your_trakt_client_secret
+TRAKT_API_URL=https://api.trakt.tv/
+TRAKT_REDIRECT_URI=urn:ietf:wg:oauth:2.0:oob
+```
+
+The local generator APK does not require a TVBG Suite server. It uses Trakt for anticipated catalogs and TMDB for artwork.
+
 ## License
 
 Based on the [Projectivy Plugin Sample](https://github.com/spocky/projectivy-plugin-wallpaper-provider).
