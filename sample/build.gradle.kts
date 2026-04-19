@@ -28,8 +28,8 @@ android {
         applicationId = "com.traktlistbackdrops.tv"
         minSdk = 23
         targetSdk = 36
-        versionCode = 35
-        versionName = "1.3.14"
+        versionCode = 36
+        versionName = "1.3.15"
 
         buildConfigField("String", "TMDB_API_KEY", "\"${prop("TMDB_API_KEY")}\"")
         buildConfigField("String", "TMDB_API_URL", "\"${prop("TMDB_API_URL", "https://api.themoviedb.org/3/")}\"")

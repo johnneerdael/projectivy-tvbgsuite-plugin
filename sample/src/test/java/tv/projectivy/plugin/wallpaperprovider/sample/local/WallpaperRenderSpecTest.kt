@@ -33,6 +33,13 @@ class WallpaperRenderSpecTest {
     }
 
     @Test
+    fun leftGradientReleasesBackdropEarlier() {
+        val spec = WallpaperRenderSpec.default()
+        assertEquals(640f, spec.leftGradientOpaqueUntilX, 0.01f)
+        assertEquals(1600f, spec.leftGradientEndX, 0.01f)
+    }
+
+    @Test
     fun edgeMasksAnchorToVisibleBackdropEdges() {
         val spec = WallpaperRenderSpec.default()
         assertEquals(spec.backdropBox.left, spec.leftEdgeMaskStartX, 0.01f)

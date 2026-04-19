@@ -60,9 +60,9 @@ data class WallpaperRenderSpec(
             height = 2160,
             logoBox = RectF(380f, 250f, 1420f, 620f),
             backdropBox = RectF(520f, 0f, 3840f, 1960f),
-            leftGradientEndX = 2100f,
+            leftGradientEndX = 1600f,
             bottomGradientStartY = 1320f,
-            leftGradientOpaqueUntilX = 760f,
+            leftGradientOpaqueUntilX = 640f,
             bottomGradientStrongUntilY = 1740f,
             backdropBiasX = 0.72f,
             backdropBiasY = 0.18f
